@@ -7,9 +7,6 @@ import javax.persistence.*
 @Table(name = "feature_flag")
 class FeatureFlagEntity(
         @Id
-        @GeneratedValue
-        @Column(name = "id")
-        var id: String? = null,
         @Column(name = "app_name")
         var applicationName: String? = null,
         @Column(name = "version")
