@@ -1,27 +1,32 @@
-package com.project.featureflag
+package controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.project.featureflag.FeatureFlagApplication
+import com.project.featureflag.config.MySQLBaseContainer
 import com.project.featureflag.entity.FeatureFlagEntity
 import com.project.featureflag.repository.FeatureFlagRepository
-import org.junit.Before
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = [FeatureFlagApplication::class])
-@ContextConfiguration(classes = [FeatureFlagApplication::class])
+@ExtendWith(SpringExtension::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = [MySQLBaseContainer.MySQLContextInitializer::class], classes = [FeatureFlagApplication::class])
 @AutoConfigureMockMvc
-class FeatureFlagApplicationTests {
+class FeatureFlagApplicationTests : MySQLBaseContainer() {
 
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -32,7 +37,7 @@ class FeatureFlagApplicationTests {
     lateinit var featureFlagRepository : FeatureFlagRepository
 
 
-    @Before
+    @BeforeEach
     fun setup() {
         var featureFlagEntity = FeatureFlagEntity()
         featureFlagEntity.applicationName = "test"
