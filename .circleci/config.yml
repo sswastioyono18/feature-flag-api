@@ -2,6 +2,7 @@ version: 2
 machine: true
 jobs:
   build:
+    executorType: machine
     steps:
       - checkout
 
