@@ -1,0 +1,74 @@
+package com.project.featureflag
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.project.featureflag.entity.FeatureFlagEntity
+import com.project.featureflag.repository.FeatureFlagRepository
+import org.junit.Before
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import java.util.*
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = [FeatureFlagApplication::class])
+@ContextConfiguration(classes = [FeatureFlagApplication::class])
+@AutoConfigureMockMvc
+class FeatureFlagApplicationTests {
+
+    @Autowired
+    lateinit var mockMvc: MockMvc
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
+
+    @Autowired
+    lateinit var featureFlagRepository : FeatureFlagRepository
+
+
+    @Before
+    fun setup() {
+        var featureFlagEntity = FeatureFlagEntity()
+        featureFlagEntity.applicationName = "test"
+        featureFlagEntity.creationDateTime = Date()
+        featureFlagEntity.version = "1.10"
+        featureFlagRepository.save(featureFlagEntity)
+    }
+
+    @Test
+    fun `assert call feature flag return app name with version`() {
+
+        val mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/api/feature/test").contentType(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful)
+                .andReturn()
+
+        val c: FeatureFlagEntity = objectMapper.readValue(mvcResult.response.contentAsString)
+        assertEquals(c.applicationName, "test")
+        assertEquals(c.version, "1.10")
+
+    }
+
+    @Test
+    fun `assert call feature not found return RecordNotFoundException`() {
+        var featureFlagEntity = FeatureFlagEntity()
+        featureFlagEntity.applicationName = "test123"
+        featureFlagEntity.creationDateTime = Date()
+        featureFlagEntity.version = "1.10"
+        featureFlagRepository.save(featureFlagEntity)
+        val mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/api/feature/test1").contentType(MediaType.APPLICATION_JSON))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError)
+                .andReturn()
+
+        assertEquals(mvcResult.resolvedException?.message, "test1 does not exist in DB")
+
+    }
+
+}
