@@ -1,16 +1,19 @@
 version: 2
 machine: true
+orbs:
+  aws-cli: circleci/aws-cli@1.2.1
+
 jobs:
   build:
+    docker:
+      - image: sactio1811/featureflag:0.0.1
+    working_directory: ~/featureflag
     executorType: machine
     steps: # a collection of executable commands
-
       - checkout # check out source code to working directory
-
       - restore_cache: # restore the saved cache after the first run or if `pom.xml` has changed
           # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
           key: feature-flag-api-{{ checksum "pom.xml" }}
-
       - run: mvn dependency:go-offline # gets the project dependencies
 
       - save_cache: # saves the project dependencies
@@ -29,4 +32,30 @@ jobs:
           path: target/featureflag-0.0.1-SNAPSHOT.jar
       # See https://circleci.com/docs/2.0/deployment-integrations/ for deploy examples
       - run: bash <(curl -s https://codecov.io/bash)
-        
+      - run:
+          name: Build Docker image
+          command: docker build -f docker/Dockerfile . -t sactio1811/featureflag:0.0.1
+      - run:
+          name: Log Docker into registry
+          command: docker login -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD}
+      - run:
+          name: Push Docker image to registry
+          command: docker push sactio1811/featureflag
+  deploy:
+    working_directory: ~/featureflag
+    docker:
+      - image: cibuilds/aws
+    steps:
+      - run:
+          name: Configure AWS Elastic Beanstalk
+          command: eb init --platform docker-19.03.6-ce --region ${AWS_DEFAULT_REGION} featureflag
+      - run:
+          name: Deploying
+          command: eb deploy elastic-beanstalk-app-staging
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - deploy
