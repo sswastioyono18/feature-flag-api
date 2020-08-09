@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+  featureflag:
+    image: 'sactio1811/featureflag:0.0.1'
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - 5000:5000
+      - 8002:8002
